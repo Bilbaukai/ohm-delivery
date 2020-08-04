@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <script src="lib/angular/angular.js"></script>
+        <script src="./main.js"></script>
+        <!-- CSS only -->
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+
+<!-- JS, Popper.js, and jQuery -->
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js" integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI" crossorigin="anonymous"></script>
+        <link rel="stylesheet" type="text/css" href="main.css">
+        <title>Ohm Delivery</title>
+    </head>
+    <body>
+        <div class="container">
+            <div class="banner">
+                <h1>Ohm Delivery</h1>
+                <h2>Get shocked by the power</h2>
+            </div>
+            
+            <div ng-app="ohm-delivery">
+                <form ng-controller="tracking" ng-submit="sendData()">
+                    <div class="form-group">
+                        <label for="trackingId">Tracking id</label>
+                        <input id="trackingId" type="text" ng-model="trackingId" class="form-control" placeholder="Enter your tracking id"/>
+                        <small class="form-text text-muted" ng-if="errorMessage">{{errorMessage}}</small>
+                    </div>
+                    <button id="formBtn" type="submit" class="btn btn-primary">Submit</button>
+                </form>
+                <br/>
+
+                <div ng-controller="ohmstatus">
+                    <div ng-if="ohm" class="card" style="width: 80%;">
+                        <div class="card-body">
+                        <h5 class="card-title d-flex justify-content-between align-items-center">Ohm delivery #{{ohm.id}} <span class="badge badge-primary badge-pill">{{ohm.status}}</span></h5>
+                        <h6 class="card-subtitle mb-2 text-muted">Tracking number : {{ohm.trackingId}}</h6>
+                        <p class="card-text">
+                            Customer infos : {{ohm.client.name}} - {{ohm.client.address}} <br/>
+                            Product description : {{ohm.description.volts}} Volts - {{ohm.description.amperes}} Amperes
+                        </p>
+                        <ul class="list-group">
+                            <li class="list-group-item list-group-item-secondary">
+                                <h5>History :</h5>
+                            </li>
+                            <li ng-repeat="hist in ohm.history" class="list-group-item d-flex justify-content-between align-items-center">
+                                {{hist.at | date: 'dd/MM/yyyy HH:mm:ss'}}
+                                <span class="badge badge-primary badge-pill">{{hist.state}}</span>
+                            </li>
+                        </ul>
+                        <br/>
+                        <div class="form-group">
+                            <label for="comment">Comment on this delivery</label>
+                            <input id="comment" type="text" ng-model="ohm.comment" ng-model-options='{ debounce: 1000 }' ng-change='addComment()' class="form-control" placeholder="Enter a comment for this deliverys"/>
+                            <small class="form-text text-muted" ng-if="commentErrorMessage">{{commentErrorMessage}}</small>
+                        </div>
+                        <br/>
+                        <a href="#" ng-click="progressTracking()" ng-if="canStatusProgress(ohm.status)" class="card-link">Progress to {{getNextStatus(ohm.status)}}</a>
+                        <a href="#" ng-if="canStatusFinalize(ohm.status)" data-toggle="modal" data-target="#finalizeModal" class="card-link">Finalize Tracking</a>
+                        <a href="#" ng-click="reorder()" class="card-link">Reorder</a>
+                        <div ng-if="loading" style="width: 1rem;height: 1rem;margin-left: 10px;position: absolute;right: 20px;bottom: 20px;" class="spinner-border text-primary" role="status">
+                            <span class="sr-only">Loading...</span>
+                        </div>
+                        </div>
+                    </div>
+
+                    <!-- Finalize modal -->
+                    <div class="modal fade" id="finalizeModal" tabindex="-1" role="dialog" aria-labelledby="finalizeModalLabel" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                            <h5 class="modal-title" id="finalizeModalLabel">Finalize tracking</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="form-group">
+                                    <label for="finalizeStatus">Delivery Status</label>
+                                    <select id="finalizeStatus" type="text" ng-model="finalizeStatus"class="form-control" placeholder="Any comment?">
+                                        <option value="true">DELIVERED</option>
+                                        <option value="false">FAILURE</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="comment">Comment for finalize</label>
+                                    <input id="comment" type="text" ng-model="finalizeComment"class="form-control" placeholder="Any comment?"/>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            <button type="button" ng-click="finalizeTrackingById()" class="btn btn-primary">Submit</button>
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
